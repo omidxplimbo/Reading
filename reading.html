@@ -85,6 +85,10 @@
         .timer-warning {
             background-color: red;
         }
+        .read-only {
+            background-color: #f9f9f9;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
@@ -95,6 +99,8 @@
         <button onclick="highlightSelection('allQuestions')">Highlight Questions</button>
         <button onclick="removeHighlight('allQuestions')">Remove Highlight Questions</button>
         <button onclick="saveContent()">Save</button>
+        <button id="toggleMainText" onclick="toggleEditing('mainText', 'toggleMainText')">Enable Editing Main Text</button>
+        <button id="toggleAllQuestions" onclick="toggleEditing('allQuestions', 'toggleAllQuestions')">Enable Editing Questions</button>
         <div class="timer-container">
             Time: <span id="timer">00:00:00</span>
             <button onclick="resetTimer()">Reset Timer</button>
@@ -107,103 +113,135 @@
             <div id="mainText" class="editor" contenteditable="true" placeholder="Paste your main text here" oninput="autoResize(this)"></div>
         </div>
         <div class="right-section">
-            <h2>Questions</h2>
-            <div id="allQuestions" class="editor" contenteditable="true" placeholder="Paste or type all your questions here" oninput="autoResize(this)"></div>
-        </div>
-    </div>
-
-    <script>
-        let seconds = 0;
-        let minutes = 0;
-        let hours = 0;
-        let timerInterval;
- 
-        function updateTimer() {
-            seconds++;
-            if (seconds === 60) {
-                seconds = 0;
-                minutes++;
-                if (minutes === 60) {
-                    minutes = 0;
-                    hours++;
+                    <h2>Questions</h2>
+                    <div id="allQuestions" class="editor" contenteditable="true" placeholder="Paste or type all your questions here" oninput="autoResize(this)"></div>
+                </div>
+            </div>
+        
+            <script>
+                let seconds = 0;
+                let minutes = 0;
+                let hours = 0;
+                let timerInterval;
+        
+                function updateTimer() {
+                    seconds++;
+                    if (seconds === 60) {
+                        seconds = 0;
+                        minutes++;
+                        if (minutes === 60) {
+                            minutes = 0;
+                            hours++;
+                        }
+                    }
+        
+                    const formattedTime = String(hours).padStart(2, '0') + ":" + String(minutes).padStart(2, '0') + ":" + String(seconds).padStart(2, '0');
+                    document.getElementById('timer').innerText = formattedTime;
+        
+                    if (minutes === 19 && hours === 0) {
+                        document.querySelector('.toolbar').classList.add('timer-warning');
+                    }
+        
+                    if (hours === 0 && minutes === 0 && seconds === 0) {
+                        document.querySelector('.toolbar').classList.remove('timer-warning');
+                    }
                 }
+        
+                function startTimer() {
+                    timerInterval = setInterval(updateTimer, 1000);
+                }
+        
+                function resetTimer() {
+                    clearInterval(timerInterval);
+                    seconds = 0;
+                    minutes = 0;
+                    hours = 0;
+                    document.getElementById('timer').innerText = "00:00:00";
+                    document.querySelector('.toolbar').classList.remove('timer-warning');
+                    startTimer();
+                }
+        
+                startTimer();
+        
+                function highlightSelection(elementId) {
+                    const element = document.getElementById(elementId);
+                    const selection = window.getSelection();
+        
+                    if (selection.rangeCount > 0) {
+                        const range = selection.getRangeAt(0);
+                        const span = document.createElement("span");
+                        span.classList.add("highlighted");
+                        range.surroundContents(span);
+                    }
+                }
+        
+                function removeHighlight(elementId) {
+                    const element = document.getElementById(elementId);
+                    const highlightedElements = element.getElementsByClassName("highlighted");
+        
+                    // Convert HTMLCollection to an array to safely remove elements
+                    Array.from(highlightedElements).forEach(highlighted => {
+                        const text = document.createTextNode(highlighted.textContent);
+                        highlighted.parentNode.replaceChild(text, highlighted);
+                    });
+                }
+        
+                function saveContent() {
+                    localStorage.setItem('mainTextContent', document.getElementById('mainText').innerHTML);
+                    localStorage.setItem('allQuestionsContent', document.getElementById('allQuestions').innerHTML);
+                }
+        
+                function loadContent() {
+                    const mainTextContent = localStorage.getItem('mainTextContent');
+                    const allQuestionsContent = localStorage.getItem('allQuestionsContent');
+        
+                    if (mainTextContent) {
+                        document.getElementById('mainText').innerHTML = mainTextContent;
+                    }
+                    if (allQuestionsContent) {
+                        document.getElementById('allQuestions').innerHTML = allQuestionsContent;
+                    }
+        
+                    autoResize(document.getElementById('mainText'));
+                    autoResize(document.getElementById('allQuestions'));
+                }
+        
+                function autoResize(element) {
+                    element.style.height = 'auto';
+                    element.style.height = (element.scrollHeight) + 'px';
+                }
+        
+                function toggleEditing(elementId, buttonId) {
+                    const element = document.getElementById (elementId);
+            const button = document.getElementById(buttonId);
+
+            if (element.getAttribute('contenteditable') === 'true') {
+                element.setAttribute('contenteditable', 'false');
+                element.classList.add('read-only');
+                button.textContent = 'Enable Editing ' + (elementId === 'mainText' ? 'Main Text' : 'Questions');
+            } else {
+                element.setAttribute('contenteditable', 'true');
+                element.classList.remove('read-only');
+                button.textContent = 'Disable Editing ' + (elementId === 'mainText' ? 'Main Text' : 'Questions');
             }
-
-            const formattedTime = String(hours).padStart(2, '0') + ":" + String(minutes).padStart(2, '0') + ":" + String(seconds).padStart(2, '0');
-            document.getElementById('timer').innerText = formattedTime;
-
-            if (minutes === 19 && hours === 0) {
-                document.querySelector('.toolbar').classList.add('timer-warning');
-            }
-
-            if (hours === 0 && minutes === 0 && seconds === 0) {
-                document.querySelector('.toolbar').classList.remove('timer-warning');
-            }
         }
 
-        function startTimer() {
-            timerInterval = setInterval(updateTimer, 1000);
-        }
+        // Automatically make the textboxes read-only after pasting
+        document.getElementById('mainText').addEventListener('paste', function() {
+            setTimeout(() => {
+                this.setAttribute('contenteditable', 'false');
+                this.classList.add('read-only');
+                document.getElementById('toggleMainText').textContent = 'Enable Editing Main Text';
+            }, 0);
+        });
 
-        function resetTimer() {
-            clearInterval(timerInterval);
-            seconds = 0;
-            minutes = 0;
-            hours = 0;
-            document.getElementById('timer').innerText = "00:00:00";
-            document.querySelector('.toolbar').classList.remove('timer-warning');
-            startTimer();
-        }
-
-        startTimer();
-
-        function highlightSelection(elementId) {
-            const element = document.getElementById(elementId);
-            const selection = window.getSelection();
-
-            if (selection.rangeCount > 0) {
-                const range = selection.getRangeAt(0);
-                const span = document.createElement("span");
-                span.classList.add("highlighted");
-                range.surroundContents(span);
-            }
-        }
-
-        function removeHighlight(elementId) {
-            const element = document.getElementById(elementId);
-            const highlightedElements = element.getElementsByClassName("highlighted");
-
-            // Convert HTMLCollection to an array to safely remove elements
-            Array.from(highlightedElements).forEach(highlighted => {
-                const text = document.createTextNode(highlighted.textContent);
-                highlighted.parentNode.replaceChild(text, highlighted);
-            });
-        }
-
-        function saveContent() {
-            localStorage.setItem('mainTextContent', document.getElementById('mainText').innerHTML);
-            localStorage.setItem('allQuestionsContent', document.getElementById('allQuestions').innerHTML);
-        }
-
-        function loadContent() {
-            const mainTextContent = localStorage.getItem('mainTextContent');
-            const allQuestionsContent = localStorage.getItem('allQuestionsContent');
-
-            if (mainTextContent) {
-                document.getElementById('mainText').innerHTML = mainTextContent;
-            }
-            if (allQuestionsContent) {
-                document.getElementById('allQuestions').innerHTML = allQuestionsContent;
-            }
-
-            autoResize(document.getElementById('mainText'));
-            autoResize(document.getElementById('allQuestions'));
-        }
-
-        function autoResize(element) {
-            element.style.height = 'auto';
-            element.style.height = (element.scrollHeight) + 'px';
-        }
+        document.getElementById('allQuestions').addEventListener('paste', function() {
+            setTimeout(() => {
+                this.setAttribute('contenteditable', 'false');
+                this.classList.add('read-only');
+                document.getElementById('toggleAllQuestions').textContent = 'Enable Editing Questions';
+            }, 0);
+        });
 
         window.onload = loadContent;
 
