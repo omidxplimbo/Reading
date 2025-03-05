@@ -76,6 +76,15 @@
             border-radius: 4px;
         }
 
+        .toolbar button.removeHilight{
+            padding: 8px 12px;
+            border: none;
+            background-color: #ff0202;
+            color: white;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
         .timer-container {
             display: flex;
             align-items: center;
@@ -108,15 +117,13 @@
 <body>
 
     <div class="toolbar">
-        <button onclick="highlightSelection('mainText')">Highlight Main Text</button>
-        <button onclick="removeHighlight('mainText')">Remove Highlight Main Text</button>
-        <button onclick="highlightSelection('allQuestions')">Highlight Questions</button>
-        <button onclick="removeHighlight('allQuestions')">Remove Highlight Questions</button>
-        <button onclick="saveContent()">Save</button>
+        <button onclick="highlightSelection('mainText')">Highlight Text</button>
+        <button class="removeHilight" onclick="removeHighlight('mainText')">Remove Highlight Text</button>
         <button id="toggleMainText" onclick="toggleEditing('mainText', 'toggleMainText')">Enable Editing Main
             Text</button>
         <button id="toggleAllQuestions" onclick="toggleEditing('allQuestions', 'toggleAllQuestions')">Enable Editing
             Questions</button>
+            <button onclick="saveContent()">Save</button>
         <div class="timer-container">
             Time: <span id="timer">00:00:00</span>
             <button onclick="resetTimer()">Reset Timer</button>
